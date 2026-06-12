@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="sv">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SignalR Testverktyg</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2a2d3a;
+      --accent: #7c6af7;
+      --accent-dim: #3d3580;
+      --green: #3ecf8e;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --text: #e2e4f0;
+      --muted: #6b7094;
+      --mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      --sans: 'Inter', system-ui, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 14px;
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    header {
+      padding: 18px 28px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo {
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    header h1 {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    header span {
+      font-size: 12px;
+      color: var(--muted);
+      margin-left: auto;
+      font-family: var(--mono);
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    /* ── LEFT PANEL ── */
+    .panel {
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .section {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 12px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--accent);
+    }
+
+    .full-width {
+      width: 100%;
+      margin-bottom: 8px;
+    }
+
+    button {
+      padding: 8px 14px;
+      border-radius: 6px;
+      border: none;
+      font-family: var(--sans);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      width: 100%;
+    }
+
+    .btn-danger {
+      background: #3a1a1a;
+      color: var(--red);
+      border: 1px solid #5a2020;
+      width: 100%;
+    }
+
+    .btn-send {
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid var(--accent-dim);
+      white-space: nowrap;
+    }
+
+    .btn-send:not(:disabled):hover {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 99px;
+      margin-bottom: 12px;
+    }
+
+    .status-pill.disconnected {
+      background: #2a1f1f;
+      color: var(--red);
+    }
+
+    .status-pill.connecting {
+      background: #2a2412;
+      color: var(--yellow);
+    }
+
+    .status-pill.connected {
+      background: #0f2a1e;
+      color: var(--green);
+    }
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .dot.pulse {
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.3;
+      }
+    }
+
+    .listeners-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .listener-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--accent);
+    }
+
+    .listener-item button {
+      padding: 2px 8px;
+      background: transparent;
+      border: 1px solid #3a2020;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .listener-item button:hover {
+      color: var(--red);
+      border-color: var(--red);
+    }
+
+    /* ── RIGHT PANEL ── */
+    .log-panel {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .log-toolbar {
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .log-toolbar span {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .btn-clear {
+      margin-left: auto;
+      padding: 4px 10px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .btn-clear:hover {
+      color: var(--text);
+      border-color: var(--muted);
+    }
+
+    #log {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    .log-entry {
+      display: grid;
+      grid-template-columns: 80px 70px 1fr;
+      gap: 10px;
+      align-items: baseline;
+      padding: 7px 10px;
+      border-radius: 5px;
+      background: var(--surface);
+      border-left: 2px solid transparent;
+      line-height: 1.5;
+    }
+
+    .log-entry.info {
+      border-left-color: var(--accent);
+    }
+
+    .log-entry.success {
+      border-left-color: var(--green);
+    }
+
+    .log-entry.error {
+      border-left-color: var(--red);
+      background: #1e1212;
+    }
+
+    .log-entry.receive {
+      border-left-color: var(--yellow);
+    }
+
+    .log-time {
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .log-badge {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      border-radius: 3px;
+      padding: 1px 5px;
+      text-align: center;
+    }
+
+    .log-entry.info .log-badge {
+      background: #2a2570;
+      color: var(--accent);
+    }
+
+    .log-entry.success .log-badge {
+      background: #0d2a1c;
+      color: var(--green);
+    }
+
+    .log-entry.error .log-badge {
+      background: #3a1010;
+      color: var(--red);
+    }
+
+    .log-entry.receive .log-badge {
+      background: #2a2010;
+      color: var(--yellow);
+    }
+
+    .log-msg {
+      color: var(--text);
+      word-break: break-word;
+    }
+
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      gap: 8px;
+    }
+
+    .empty-state .icon {
+      font-size: 32px;
+      opacity: 0.4;
+    }
+
+    .empty-state p {
+      font-size: 12px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="logo">⚡</div>
+    <h1>SignalR Testverktyg</h1>
+    <span id="hub-label">—</span>
+  </header>
+
+  <div class="workspace">
+    <!-- LEFT -->
+    <div class="panel">
+
+      <!-- Connection -->
+      <div class="section">
+        <div class="section-label">Anslutning</div>
+        <div id="status-pill" class="status-pill disconnected">
+          <div class="dot"></div>
+          <span id="status-text">Frånkopplad</span>
+        </div>
+        <input id="hubUrl" type="text" class="full-width" placeholder="https://localhost:7050/chat"
+          value="https://localhost:7050/chat" />
+        <button id="btn-connect" class="btn-primary" onclick="toggleConnection()">Anslut</button>
+      </div>
+
+      <!-- Invoke -->
+      <div class="section">
+        <div class="section-label">Anropa metod</div>
+        <input id="methodName" type="text" class="full-width" placeholder="Metodnamn, t.ex. SendMessage" />
+        <input id="arg1" type="text" class="full-width" placeholder="Argument 1" />
+        <input id="arg2" type="text" class="full-width" placeholder="Argument 2 (valfritt)" />
+        <input id="arg3" type="text" class="full-width" placeholder="Argument 3 (valfritt)" />
+        <button id="btn-send" class="btn-primary" onclick="invokeMethod()" disabled>Skicka</button>
+      </div>
+
+      <!-- Listen -->
+      <div class="section">
+        <div class="section-label">Lyssna på event</div>
+        <div class="input-row" style="margin-bottom:12px;">
+          <input id="listenEvent" type="text" placeholder="T.ex. ReceiveMessage" />
+          <button class="btn-send" onclick="addListener()">+ Lägg till</button>
+        </div>
+        <div class="listeners-list" id="listeners-list">
+          <div style="color:var(--muted);font-size:11px;">Inga aktiva lyssnare.</div>
+        </div>
+      </div>
+
+      <!-- Disconnect -->
+      <div class="section">
+        <button id="btn-disconnect" class="btn-danger" onclick="disconnect()" disabled>Koppla från</button>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: LOG -->
+    <div class="log-panel">
+      <div class="log-toolbar">
+        <span>Händelselogg</span>
+        <button class="btn-clear" onclick="clearLog()">Rensa</button>
+      </div>
+      <div id="log">
+        <div class="empty-state" id="empty-state">
+          <div class="icon">📡</div>
+          <p>Anslut till en hub för att börja logga händelser.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let connection = null;
+    let listeners = {};
+
+    function log(type, badge, msg) {
+      const empty = document.getElementById('empty-state');
+      if (empty) empty.remove();
+
+      const logEl = document.getElementById('log');
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+
+      const now = new Date();
+      const time = now.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      entry.innerHTML = `
+      <span class="log-time">${time}</span>
+      <span class="log-badge">${badge}</span>
+      <span class="log-msg">${escapeHtml(msg)}</span>
+    `;
+      logEl.appendChild(entry);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function setStatus(state) {
+      const pill = document.getElementById('status-pill');
+      const text = document.getElementById('status-text');
+      const dot = pill.querySelector('.dot');
+
+      pill.className = `status-pill ${state}`;
+      dot.className = state === 'connecting' ? 'dot pulse' : 'dot';
+
+      const labels = { disconnected: 'Frånkopplad', connecting: 'Ansluter…', connected: 'Ansluten' };
+      text.textContent = labels[state];
+    }
+
+    async function toggleConnection() {
+      if (connection && connection.state === signalR.HubConnectionState.Connected) {
+        await disconnect();
+      } else {
+        await connect();
+      }
+    }
+
+    async function connect() {
+      const url = document.getElementById('hubUrl').value.trim();
+      if (!url) return;
+
+      document.getElementById('hub-label').textContent = url.split('/').pop();
+      setStatus('connecting');
+      log('info', 'INFO', `Ansluter till ${url}…`);
+
+      connection = new signalR.HubConnectionBuilder()
+        .withUrl(url)
+        .withAutomaticReconnect()
+        .configureLogging(signalR.LogLevel.Warning)
+        .build();
+
+      connection.onclose(err => {
+        setStatus('disconnected');
+        log('error', 'STÄNGD', err ? err.message : 'Anslutningen stängdes.');
+        updateButtons(false);
+      });
+
+      connection.onreconnecting(err => {
+        setStatus('connecting');
+        log('info', 'ÅTER', `Återansluter… ${err?.message ?? ''}`);
+      });
+
+      connection.onreconnected(id => {
+        setStatus('connected');
+        log('success', 'ÅTER', `Återansluten. Connection ID: ${id}`);
+      });
+
+      // Re-register listeners on new connection object
+      for (const event of Object.keys(listeners)) {
+        registerOnHandler(event);
+      }
+
+      try {
+        await connection.start();
+        setStatus('connected');
+        log('success', 'OK', `Ansluten! Connection ID: ${connection.connectionId}`);
+        updateButtons(true);
+      } catch (err) {
+        setStatus('disconnected');
+        log('error', 'FEL', err.message);
+        updateButtons(false);
+      }
+    }
+
+    async function disconnect() {
+      if (connection) {
+        await connection.stop();
+        connection = null;
+      }
+      setStatus('disconnected');
+      updateButtons(false);
+      log('info', 'INFO', 'Manuellt frånkopplad.');
+    }
+
+    function updateButtons(connected) {
+      document.getElementById('btn-connect').textContent = connected ? 'Koppla från' : 'Anslut';
+      document.getElementById('btn-connect').className = connected ? 'btn-danger' : 'btn-primary';
+      document.getElementById('btn-disconnect').disabled = !connected;
+      document.getElementById('btn-send').disabled = !connected;
+    }
+
+    async function invokeMethod() {
+      if (!connection) return;
+
+      const method = document.getElementById('methodName').value.trim();
+      if (!method) { log('error', 'FEL', 'Ange ett metodnamn.'); return; }
+
+      const args = [
+        document.getElementById('arg1').value,
+        document.getElementById('arg2').value,
+        document.getElementById('arg3').value,
+      ].filter(a => a !== '');
+
+      const preview = args.length ? `(${args.map(a => `"${a}"`).join(', ')})` : '()';
+      log('info', 'SEND', `${method}${preview}`);
+
+      try {
+        const result = await connection.invoke(method, ...args);
+        if (result !== undefined && result !== null) {
+          log('success', 'SVAR', JSON.stringify(result));
+        } else {
+          log('success', 'OK', 'Metoden anropades utan svarsvärde.');
+        }
+      } catch (err) {
+        log('error', 'FEL', err.message);
+      }
+    }
+
+    function addListener() {
+      const event = document.getElementById('listenEvent').value.trim();
+      if (!event) return;
+      if (listeners[event]) { log('info', 'INFO', `Lyssnar redan på "${event}".`); return; }
+
+      listeners[event] = true;
+      if (connection) registerOnHandler(event);
+
+      renderListeners();
+      document.getElementById('listenEvent').value = '';
+      log('info', 'INFO', `Lyssnare registrerad: "${event}"`);
+    }
+
+    function registerOnHandler(event) {
+      connection.on(event, (...args) => {
+        const formatted = args.map((a, i) => `arg${i + 1}: ${typeof a === 'object' ? JSON.stringify(a) : a}`).join(' | ');
+        log('receive', 'RECV', `${event} → ${formatted}`);
+      });
+    }
+
+    function removeListener(event) {
+      if (connection) connection.off(event);
+      delete listeners[event];
+      renderListeners();
+      log('info', 'INFO', `Lyssnare borttagen: "${event}"`);
+    }
+
+    function renderListeners() {
+      const list = document.getElementById('listeners-list');
+      const keys = Object.keys(listeners);
+      if (!keys.length) {
+        list.innerHTML = '<div style="color:var(--muted);font-size:11px;">Inga aktiva lyssnare.</div>';
+        return;
+      }
+      list.innerHTML = keys.map(ev => `
+      <div class="listener-item">
+        <span>${ev}</span>
+        <button onclick="removeListener('${ev}')">Ta bort</button>
+      </div>
+    `).join('');
+    }
+
+    function clearLog() {
+      document.getElementById('log').innerHTML = `
+      <div class="empty-state" id="empty-state">
+        <div class="icon">📡</div>
+        <p>Loggen rensades.</p>
+      </div>`;
+    }
+
+    // Enter to send
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && document.activeElement.id !== 'listenEvent') {
+        if (!document.getElementById('btn-send').disabled) invokeMethod();
+      }
+    });
+  </script>
+</body>
+
+</html>
