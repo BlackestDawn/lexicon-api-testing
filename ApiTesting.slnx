@@ -3,4 +3,5 @@
   <Project Path="Grpc.API/Grpc.API.csproj" />
   <Project Path="Minimal.API/Minimal.API.csproj" />
   <Project Path="Mixed.API/Mixed.API.csproj" />
+  <Project Path="SignalR.API/SignalR.API.csproj" />
 </Solution>
