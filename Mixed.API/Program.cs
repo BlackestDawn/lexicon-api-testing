@@ -18,6 +18,9 @@ app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
+app.MapGet("/ping", () => "pong");
+app.MapGet("/minimal/test", () => new { message = "Minimal API"});
+
 app.MapControllers();
 
 app.Run();

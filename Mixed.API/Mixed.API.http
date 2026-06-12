@@ -1,6 +1,9 @@
 @Mixed.API_HostAddress = http://localhost:5042
 
-GET {{Mixed.API_HostAddress}}/weatherforecast/
+GET {{Mixed.API_HostAddress}}/ping
 Accept: application/json
 
 ###
+
+GET {{Mixed.API_HostAddress}}/minimal/test
+Accept: application/json
