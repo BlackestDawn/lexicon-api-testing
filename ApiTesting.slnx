@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="Controller.API/Controller.API.csproj" />
+  <Project Path="Grpc.API/Grpc.API.csproj" />
   <Project Path="Minimal.API/Minimal.API.csproj" />
   <Project Path="Mixed.API/Mixed.API.csproj" />
 </Solution>
